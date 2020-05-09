@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c",
-    "run": "npm run build && node ./dist/index.js"
+    "exec": "npm run build && node ./dist/index.js"
   },
   "author": "qnz",
   "license": "ISC",
