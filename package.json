@@ -4,10 +4,40 @@
   "description": "automatically benchmark your code base",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "run": "npm run build && node ./dist/index.js"
   },
   "author": "qnz",
   "license": "ISC",
+  "devDependencies": {
+    "@types/lodash": "^3.10.1",
+    "@types/node": "^10.17.6",
+    "@typescript-eslint/eslint-plugin": "^2.10.0",
+    "@typescript-eslint/eslint-plugin-tslint": "^2.10.0",
+    "@typescript-eslint/parser": "^2.10.0",
+    "@typescript-eslint/typescript-estree": "^2.6.1",
+    "eslint": "^6.7.2",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-prefer-arrow": "^1.1.7",
+    "eslint-plugin-prettier": "^3.1.1",
+    "lodash": "^3.10.1",
+    "prettier": "^1.19.1",
+    "rollup": "^0.63.4",
+    "rollup-plugin-buble": "^0.19.4",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-commonjs": "^9.1.4",
+    "rollup-plugin-multi-entry": "^2.0.2",
+    "rollup-plugin-node-resolve": "^3.3.0",
+    "rollup-plugin-nodent": "^0.2.2",
+    "rollup-plugin-typescript2": "^0.16.1",
+    "screeps-api": "^1.9.1",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.7.2",
+    "typescript-eslint": "0.0.1-alpha.0"
+  },
   "dependencies": {
     "prompt-sync": "^4.2.0",
     "screeps-api": "^1.11.0"

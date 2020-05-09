@@ -1,4 +1,5 @@
 const ScreepsAPI = require("screeps-api").ScreepsAPI;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const prompt = require('prompt-sync')({
   sigint: true
 });
@@ -26,7 +27,8 @@ const CONSTRUCTION_COST = {
 };
 
 const main = async () => {
-  const pkg = require("./package.json");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const pkg = require("../package.json");
   console.log(`screeps-benchmark v.${pkg.version}`);
   console.log(`-------------------------`);
   const api = new ScreepsAPI({
@@ -50,7 +52,7 @@ const main = async () => {
   api.socket.on('connected', () => {
     // Do stuff after connected
   })
-  api.socket.on('auth', (event) => {
+  api.socket.on('auth', (event: any) => {
     console.log("status", event.data.status); // contains either 'ok' or 'failed'
     // Do stuff after auth
   })
@@ -62,23 +64,22 @@ const main = async () => {
   // although you may want to subscribe from the connected or auth callback to better handle reconnects
 
   // Starting in 1.0, you can also pass a handler straight to subscribe!
-  api.socket.subscribe('console', (event) => {
-    //console.log(event.data.messages.log); // List of console.log output for tick
+  api.socket.subscribe('console', (event: any) => {
+    // console.log(event.data.messages.log); // List of console.log output for tick
   })
 
   // api.socket.subscribe('cpu',(event)=>console.log('cpu',event.data))
-  let c = 0;
-  api.socket.subscribe('room:W8N3', (event) => {
+  api.socket.subscribe('room:W8N3', (event: any) => {
     checkStructures(event.data);
   })
 }
-const structuresSeen = {}; // id: {lastseen:number, type: number}
-let controllerId = "";
-const controller = {}; // {[level:number]: number}
+const structuresSeen: any = {}; // id: {lastseen:number, type: number}
+let controllerId: any = "";
+const controller: any = {}; // {[level:number]: number}
 let tickOffset = 0;
 let safeMode = 0;
 
-const checkStructures = (data) => {
+const checkStructures = (data: any) => {
   for (const id in data.objects) {
     const obj = data.objects[id];
     // handle controller upgrade
@@ -88,7 +89,7 @@ const checkStructures = (data) => {
           tickOffset = data.gameTime || tickOffset;
         }
         controller[obj.level] = data.gameTime - tickOffset || -1;
-        console.log(`${data.gameTime -tickOffset}: controller progress: level ${obj.level}`)
+        console.log(`${data.gameTime - tickOffset}: controller progress: level ${obj.level}`)
       }
     }
 
@@ -98,7 +99,7 @@ const checkStructures = (data) => {
     } else {
       if (obj && obj.type && Object.keys(CONSTRUCTION_COST).includes(obj.type)) {
         if (obj.type !== "rampart") {
-          console.log(`${data.gameTime-tickOffset}: new ${obj.type} detected: ${id}`);
+          console.log(`${data.gameTime - tickOffset}: new ${obj.type} detected: ${id}`);
         }
         structuresSeen[id] = {
           lastseen: data.gameTime,
@@ -107,19 +108,20 @@ const checkStructures = (data) => {
       }
       if (obj && obj.type === "controller") {
         controllerId = id;
-        if(obj.safeMode) {
+        if (obj.safeMode) {
           safeMode = obj.safeMode;
         }
       }
     }
   }
-  if((safeMode- data.gameTick || Infinity) <= 0) {
-    console.log(`${data.gameTime-tickOffset}: safemode ended.`);
-   } else {
-     if(data.gameTick % 500 ===0) {
-       console.log(`${data.gameTime-tickOffset}: ticks til safe mode end: ${safeMode- data.gameTick }`)
-     }
-   }
+  if ((safeMode - data.gameTick || Infinity) <= 0) {
+    console.log(`${data.gameTime - tickOffset}: safemode ended.`);
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    if (data.gameTick % 500 === 0) {
+      console.log(`${data.gameTime - tickOffset}: ticks til safe mode end: ${safeMode - data.gameTick}`)
+    }
+  }
 }
 
 main();
