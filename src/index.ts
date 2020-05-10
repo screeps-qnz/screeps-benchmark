@@ -1,11 +1,6 @@
+import { validateServerFiles } from "server";
+
 const ScreepsAPI = require("screeps-api").ScreepsAPI;
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const prompt = require('prompt-sync')({
-  sigint: true
-});
-
-const tickDuration = 10;
-
 
 const CONSTRUCTION_COST = {
   "spawn": 15000,
@@ -31,6 +26,9 @@ const main = async () => {
   const pkg = require("../package.json");
   console.log(`screeps-benchmark v.${pkg.version}`);
   console.log(`-------------------------`);
+  const validation = await validateServerFiles();
+  console.log(`validation ${validation}`);
+  /*
   const api = new ScreepsAPI({
     email: "qnz",
     password: "test",
@@ -72,7 +70,9 @@ const main = async () => {
   api.socket.subscribe('room:W8N3', (event: any) => {
     checkStructures(event.data);
   })
+  */
 }
+
 const structuresSeen: any = {}; // id: {lastseen:number, type: number}
 let controllerId: any = "";
 const controller: any = {}; // {[level:number]: number}
