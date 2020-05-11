@@ -4,7 +4,7 @@ import clear from "rollup-plugin-clear";
 import resolve from "rollup-plugin-node-resolve";
 import commonjs from "rollup-plugin-commonjs";
 import typescript from "rollup-plugin-typescript2";
-import builtins from "rollup-plugin-node-builtins";
+import json from "rollup-plugin-json";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pkg = require("./package.json");
@@ -44,11 +44,11 @@ export default {
       targets: ["dist"]
     }),
     */
-    // builtins(),
     resolve(),
     commonjs(),
     typescript({
       tsconfig: "./tsconfig.json"
-    })
+    }),
+    json()
   ]
 }
