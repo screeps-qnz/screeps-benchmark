@@ -1,4 +1,4 @@
-import { validateServerFiles } from "server";
+import { validateServerFiles } from "setup";
 
 const ScreepsAPI = require("screeps-api").ScreepsAPI;
 
@@ -24,10 +24,15 @@ const CONSTRUCTION_COST = {
 const main = async () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const pkg = require("../package.json");
-  console.log(`screeps-benchmark v.${pkg.version}`);
+  console.log(`screeps-benchmark v${pkg.version}`);
   console.log(`-------------------------`);
+  console.log(`validating server files...`);
   const validation = await validateServerFiles();
-  console.log(`validation ${validation}`);
+  if (!validation) {
+    console.log(`server files invalid, stopping`);
+    return;
+  }
+  console.log(`server files are up to date!`);
   /*
   const api = new ScreepsAPI({
     email: "qnz",

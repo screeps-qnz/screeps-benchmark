@@ -4,8 +4,8 @@ import * as url from "url";
 import path from "path";
 import fs from "fs";
 import rimraf from "rimraf";
-import { resolve } from "dns";
-import { rejects } from "assert";
+import yaml from "js-yaml";
+import { serverDefaultConfig } from "defaultConfig";
 
 interface GitHubReleaseAssetInfo {
   url: string;
@@ -18,7 +18,17 @@ interface GitHubReleaseResponse {
   assets: GitHubReleaseAssetInfo[];
 }
 
+export interface ParsedSLConfig {
+  steamKey: string;
+  mods: string[];
+  bots: { [bot: string]: string };
+  serverConfig: {
+    tickRate: number;
+  };
+}
+
 const DIR_SERVER = "server";
+const CONFIG_NAME = "config.yml";
 
 /**
  * checks whether server files are missing and updates as necessary
@@ -46,6 +56,7 @@ export const validateServerFiles = async (directory: string = DIR_SERVER): Promi
     return false;
   }
 
+  console.log(`checking for server executable update...`);
   const executableFileName = getLeafFileNameFromUrl(releaseUrl);
   const shouldUpgrade = await isUpgradeNeeded(directory, executableFileName);
 
@@ -57,10 +68,48 @@ export const validateServerFiles = async (directory: string = DIR_SERVER): Promi
     console.log(`ok.`);
     console.log(`downloading current release from: ${releaseUrl}...`);
     const status = await downloadBinaryFile(releaseUrl, `${fsDir}${path.sep}${executableFileName}`);
+    if (!status) {
+      console.error(`error downloading.`);
+      return false;
+    }
     console.log("ok.");
+  } else {
+    console.log(`server executable is up to date.`)
   }
 
+  console.log(`checking ${CONFIG_NAME}...`);
+  const validConfig = isConfigValid(`${fsDir}${path.sep}${CONFIG_NAME}`);
+  if (!validConfig) {
+    return false;
+  }
+  console.log("ok");
+
   return `${fsDir}${path.sep}${executableFileName}`;
+}
+
+const isConfigValid = (path: string, createIfNotExists: boolean = true): boolean => {
+  if (!fs.existsSync(path)) {
+    console.error(`config not found at ${path}`);
+    if (createIfNotExists) {
+      console.log(`writing default config...`);
+      fs.writeFileSync(path, yaml.safeDump(serverDefaultConfig))
+      console.log(`ok`);
+    }
+  }
+  try {
+    const content = fs.readFileSync(path, "utf8");
+    const config: ParsedSLConfig = yaml.safeLoad(content);
+    if (!config.steamKey || config.steamKey.length === 0) {
+      console.error(`the config needs a valid steamKey`);
+      console.log(`check the README of screeps-launcher on how to get yours @ https://github.com/screepers/screeps-launcher`);
+      console.log(`your config file is located here: ${path}`);
+      return false;
+    }
+    return true;
+  } catch (exc) {
+    console.error(`an error occured while reading the config: ${exc}`);
+    return false;
+  }
 }
 
 const downloadBinaryFile = (from: string, to: string): Promise<boolean> => new Promise((resolve, reject) => {
