@@ -13,22 +13,21 @@ export const startServer = (filePath: string, params: any = []) => {
 
   return new Promise((resolve, reject) => {
     let isRunning = false;
+    const cbRunning = (data: any) => {
+      if (data.toString().includes("Exited with error")) {
+        console.log(`[server] error: ${data}`);
+        reject(false);
+      }
+      if (data.toString().includes("Started")) {
+        isRunning = true;
+        children.push(server);
+        resolve(true);
+      }
+    }
     const server = cp.spawn(filePath, params, { cwd: directory });
     server.stdout!.setEncoding("utf8");
-    server.stdout!.on("data", (data) => {
-      if (data.toString().includes("Started")) {
-        isRunning = true;
-        children.push(server);
-        resolve(true);
-      }
-    });
-    server.stderr!.on("data", (data) => {
-      if (data.toString().includes("Started")) {
-        isRunning = true;
-        children.push(server);
-        resolve(true);
-      }
-    });
+    server.stdout!.on("data", cbRunning);
+    server.stderr!.on("data", cbRunning);
     server.on("close", (code, signal) => {
       console.log(`[server] closed: ${code} ${signal}`);
     });
