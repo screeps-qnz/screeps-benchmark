@@ -1,4 +1,5 @@
 import { validateServerFiles } from "setup";
+import { startServer, killChildProcesses } from "server";
 
 const ScreepsAPI = require("screeps-api").ScreepsAPI;
 
@@ -27,12 +28,20 @@ const main = async () => {
   console.log(`screeps-benchmark v${pkg.version}`);
   console.log(`-------------------------`);
   console.log(`validating server files...`);
-  const validation = await validateServerFiles();
-  if (!validation) {
+  const serverExecutable = await validateServerFiles();
+  if (serverExecutable === false) {
     console.log(`server files invalid, stopping`);
-    return;
+    process.exit(1);
   }
   console.log(`server files are up to date!`);
+
+  console.log(`starting server...`);
+  const result = await startServer(serverExecutable)
+    .catch((success) => {
+      console.log("error starting server, stopping");
+      process.exit(1);
+    });
+  console.log("ok");
   /*
   const api = new ScreepsAPI({
     email: "qnz",
@@ -128,5 +137,9 @@ const checkStructures = (data: any) => {
     }
   }
 }
+
+process.on("exit", () => {
+  killChildProcesses();
+});
 
 main();

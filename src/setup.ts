@@ -1,5 +1,5 @@
 /* eslint-disable no-shadow */
-import * as https from "https";
+import https from "https";
 import * as url from "url";
 import path from "path";
 import fs from "fs";
@@ -29,6 +29,8 @@ export interface ParsedSLConfig {
 
 const DIR_SERVER = "server";
 const CONFIG_NAME = "config.yml";
+const HTTP_OK = 200;
+const HTTP_MULTIPLE_CHOICES = 300;
 
 /**
  * checks whether server files are missing and updates as necessary
@@ -114,13 +116,30 @@ const isConfigValid = (path: string, createIfNotExists: boolean = true): boolean
 
 const downloadBinaryFile = (from: string, to: string): Promise<boolean> => new Promise((resolve, reject) => {
   const file = fs.createWriteStream(to);
-  const request = https.get(from, (res) => res.pipe(file));
+  const request = https.get(from, (res) => {
+    if (res.statusCode && res.statusCode >= HTTP_OK && res.statusCode < HTTP_MULTIPLE_CHOICES) {
+      res.pipe(file);
+    } else if (res.headers.location) {
+      resolve(downloadBinaryFile(res.headers.location, to));
+    } else {
+      file.close();
+      fs.unlink(to, () => { /* */ });
+      console.error(`server response: ${res.statusCode} - ${res.statusMessage}`);
+      reject(false);
+    }
+  });
   request.on("error", (err) => {
     console.error(err);
+    file.close();
+    fs.unlink(to, () => { /* */ });
     reject(false);
   });
-  request.on("finish", () => {
+  file.on("finish", () => {
     resolve(true);
+  });
+  file.on("error", (err) => {
+    console.log(`file error: ${err}`);
+    reject(false);
   })
 });
 
