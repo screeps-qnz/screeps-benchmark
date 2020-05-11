@@ -31,6 +31,7 @@ const main = async () => {
   const serverExecutable = await validateServerFiles();
   if (serverExecutable === false) {
     console.log(`server files invalid, stopping`);
+    killChildProcesses();
     process.exit(1);
   }
   console.log(`server files are up to date!`);
@@ -39,9 +40,10 @@ const main = async () => {
   const result = await startServer(serverExecutable)
     .catch((success) => {
       console.log("error starting server, stopping");
+      killChildProcesses();
       process.exit(1);
     });
-  console.log("ok");
+  console.log("ok.");
   /*
   const api = new ScreepsAPI({
     email: "qnz",
