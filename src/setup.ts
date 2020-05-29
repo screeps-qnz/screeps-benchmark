@@ -8,8 +8,7 @@ import yaml from "js-yaml";
 import { serverDefaultConfig } from "defaultConfig";
 import yesno from "yesno";
 import { DEFAULT_BOT_NAME } from "./constants";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const prompt = require("prompt");
+import readlineSync from "readline-sync";
 
 interface GitHubReleaseAssetInfo {
   url: string;
@@ -251,6 +250,18 @@ const getCurrentReleaseUrl = async (): Promise<string | null> => {
   });
 }
 
+const copyFolderSync = (from: string, to: string) => {
+  if (!fs.existsSync(to)) {
+    fs.mkdirSync(to);
+  }
+  fs.readdirSync(from).forEach(element => {
+    if (fs.lstatSync(path.join(from, element)).isFile()) {
+      fs.copyFileSync(path.join(from, element), path.join(to, element));
+    } else {
+      copyFolderSync(path.join(from, element), path.join(to, element));
+    }
+  });
+}
 
 export const validateBotConfig = async (configPath: string) => {
   let shouldUpdateBots = false;
@@ -258,23 +269,25 @@ export const validateBotConfig = async (configPath: string) => {
   if (Object.keys(bots).length === 0) {
     shouldUpdateBots = true;
   }
+  /*
   console.log(`the following bots are configured:`);
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
   console.log(JSON.stringify(bots, null, 2));
+  */
 
-  const botConfigOK = await yesno({ question: "is this okay?" });
-
-  if (shouldUpdateBots || !botConfigOK) {
-    prompt.start();
-    prompt.get("botPath", (err: any, result: any) => {
-      if (err) {
-        console.log(`error: ${err}`);
-        return;
-      }
-      // updateBotConfig(configPath, { [DEFAULT_BOT_NAME]: `".\\\\..\\\\..\\\\..\\\\screeps-novatipu\\\\dist"` });
-      updateBotConfig(configPath, { [DEFAULT_BOT_NAME]: result.botPath });
-      console.log(`okay, path has been updated to ${result.botPath}`);
-    });
+  if (!shouldUpdateBots) {
+    const shouldSwitch = await yesno({ question: "do you want to switch the bot that is being benchmarked? (y/n)" });
+    if (shouldSwitch) {
+      shouldUpdateBots = true;
+    }
+  }
+  if (shouldUpdateBots) {
+    const botPath = readlineSync.questionPath("please provide the path to the directory of the bot you want to benchmark: ");
+    copyFolderSync(botPath, `${__dirname}\\bot`);
+    // updateBotConfig(configPath, { [DEFAULT_BOT_NAME]: `".\\\\..\\\\..\\\\..\\\\screeps-novatipu\\\\dist"` });
+    const defaultBotPath = ".\\\\..\\\\bot";
+    updateBotConfig(configPath, { [DEFAULT_BOT_NAME]: defaultBotPath });
+    console.log(`okay, bot has been updated from ${botPath}`);
 
   }
 }

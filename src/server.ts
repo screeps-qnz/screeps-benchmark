@@ -1,6 +1,5 @@
 import cp, { ChildProcess } from "child_process";
 import path from "path";
-import treekill from "tree-kill";
 import net from "net";
 import { sleep, SLEEP_DEFAULT } from "./util";
 import http from "http";
@@ -14,7 +13,7 @@ const TIMEOUT_SERVER_WARN_INSTALL = 30000;
 const PORT_SERVER_CLI = 21026;
 const PORT_SERVER_HTTP = 21025;
 const ADDRESS_SERVER = "127.0.0.1";
-const INTERVAL_CHECK_SERVER = 500;
+const INTERVAL_CHECK_SERVER = 1000;
 const INTERVAL_ADD_USER = 1000;
 
 export const checkServer = async () => new Promise(async (resolve, reject) => {
@@ -25,11 +24,12 @@ export const checkServer = async () => new Promise(async (resolve, reject) => {
   while (!success) {
     await runCli(`console.log("test")`, false)
       .then(() => {
+        console.log(`waiting for server: ok.`);
         resolve();
         success = true;
       })
       .catch(() => {
-        console.log("server not ready yet...");
+        console.log("waiting for server...");
       });
     sleep(INTERVAL_CHECK_SERVER);
   }

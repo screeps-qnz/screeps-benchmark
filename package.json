@@ -12,9 +12,9 @@
   "author": "qnz",
   "license": "ISC",
   "devDependencies": {
-    "@types/fs-extra": "^8.1.0",
     "@types/js-yaml": "^3.12.3",
     "@types/node": "^13.13.5",
+    "@types/readline-sync": "^1.4.3",
     "@types/rimraf": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^2.10.0",
     "@typescript-eslint/eslint-plugin-tslint": "^2.10.0",
@@ -43,7 +43,7 @@
   "dependencies": {
     "fs-extra": "^9.0.0",
     "js-yaml": "^3.13.1",
-    "prompt": "^1.0.0",
+    "readline-sync": "^1.4.10",
     "rimraf": "^3.0.2",
     "screeps-api": "^1.11.0",
     "yesno": "^0.3.1"

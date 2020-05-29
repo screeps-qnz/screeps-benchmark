@@ -52,4 +52,8 @@ const main = async () => {
 
 }
 
+process.on("exit", () => {
+  console.log(`\nremember to stop the server too if needed!`);
+});
+
 main();
