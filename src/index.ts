@@ -1,33 +1,45 @@
-import { validateServerFiles } from "setup";
-import { startServer, killChildProcesses, prepareTestRun, setupListener, runTests, } from "server";
+import { validateServerFiles, validateServerConfiguration, getBotConfig, updateBotConfig, validateBotConfig } from "setup";
+import { prepareTestRun, setupListener, runTests, checkServer, } from "server";
 import { sleep, SLEEP_DEFAULT } from "./util";
+import { DEFAULT_BOT_NAME } from "./constants";
+import yesno from "yesno";
 
 
 const main = async () => {
+  // skip non-windows for now
+  if (process.platform !== "win32") {
+    console.error(`only windows is supported for now, sorry :(`);
+    process.exit(1);
+  }
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const pkg = require("../package.json");
   console.log(`screeps-benchmark v${pkg.version}`);
   console.log(`-------------------------`);
+
   console.log(`validating server files...`);
   const serverExecutable = await validateServerFiles();
   if (serverExecutable === false) {
     console.log(`server files invalid, stopping`);
-    killChildProcesses();
     process.exit(1);
   }
   console.log(`server files are up to date!`);
 
-  console.log(`starting server...`);
+  console.log(`validating server config...`);
+  const configPath = validateServerConfiguration();
+  if (!configPath) {
+    console.log(`server config is invalid.`);
+    process.exit(1);
+  }
 
-  const result = await startServer(serverExecutable)
-    .catch((success) => {
-      if (!success) {
-        console.log("error starting server, stopping");
-        killChildProcesses();
-        process.exit(1);
-      }
-    });
-  console.log("ok.");
+  await validateBotConfig(configPath);
+
+  console.log(`please start the server now, it is located here: ${serverExecutable}`);
+  await sleep(SLEEP_DEFAULT);
+
+  await checkServer().catch((msg) => {
+    console.log(`server not available, error was: ${msg}`);
+    return;
+  })
 
   console.log("waiting for cli...");
   await sleep(SLEEP_DEFAULT);
@@ -39,9 +51,5 @@ const main = async () => {
   runTests(rooms);
 
 }
-
-process.on("exit", () => {
-  killChildProcesses();
-});
 
 main();

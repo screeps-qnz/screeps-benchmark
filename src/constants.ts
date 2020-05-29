@@ -16,3 +16,5 @@ export const CONSTRUCTION_COST = {
   "nuker": 100000,
   "factory": 100000
 };
+
+export const DEFAULT_BOT_NAME = "bench";

@@ -6,6 +6,10 @@ import fs from "fs";
 import rimraf from "rimraf";
 import yaml from "js-yaml";
 import { serverDefaultConfig } from "defaultConfig";
+import yesno from "yesno";
+import { DEFAULT_BOT_NAME } from "./constants";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const prompt = require("prompt");
 
 interface GitHubReleaseAssetInfo {
   url: string;
@@ -40,11 +44,6 @@ const HTTP_MULTIPLE_CHOICES = 300;
 export const validateServerFiles = async (directory: string = DIR_SERVER): Promise<string | false> => {
 
   const fsDir = path.join(__dirname, directory);
-  // skip non-windows for now
-  if (process.platform !== "win32") {
-    console.error(`only windows is supported for now`);
-    return false;
-  }
 
   if (!fs.existsSync(fsDir)) {
     console.log(`creating server directory: ${directory}`)
@@ -79,32 +78,62 @@ export const validateServerFiles = async (directory: string = DIR_SERVER): Promi
     console.log(`server executable is up to date.`)
   }
 
+  return `${fsDir}${path.sep}${executableFileName}`;
+}
+
+export const validateServerConfiguration = (directory: string = DIR_SERVER): string | false => {
   console.log(`checking ${CONFIG_NAME}...`);
+  const fsDir = path.join(__dirname, directory);
   const validConfig = isConfigValid(`${fsDir}${path.sep}${CONFIG_NAME}`);
   if (!validConfig) {
     return false;
   }
-  console.log("ok");
 
-  return `${fsDir}${path.sep}${executableFileName}`;
+  console.log("ok");
+  return `${fsDir}${path.sep}${CONFIG_NAME}`;
 }
 
-const isConfigValid = (path: string, createIfNotExists: boolean = true): boolean => {
-  if (!fs.existsSync(path)) {
-    console.error(`config not found at ${path}`);
+export const getBotConfig = (configPath: string): { [bot: string]: string } | false => {
+  try {
+    const content = fs.readFileSync(configPath, "utf8");
+    const config: ParsedSLConfig = yaml.safeLoad(content);
+    return config.bots;
+  } catch (exc) {
+    console.error(`an error occured while reading the config: ${exc}`);
+    return false;
+  }
+}
+
+export const updateBotConfig = (configPath: string, bots: { [bot: string]: string }): boolean => {
+  try {
+    const content = fs.readFileSync(configPath, "utf8");
+    const config: ParsedSLConfig = yaml.safeLoad(content);
+    config.bots = bots;
+    const newContent = yaml.safeDump(config);
+    fs.writeFileSync(configPath, newContent, "utf8");
+    return true;
+  } catch (exc) {
+    console.error(`an error occured while reading the config: ${exc}`);
+    return false;
+  }
+}
+
+const isConfigValid = (configPath: string, createIfNotExists: boolean = true): boolean => {
+  if (!fs.existsSync(configPath)) {
+    console.error(`config not found at ${configPath}`);
     if (createIfNotExists) {
       console.log(`writing default config...`);
-      fs.writeFileSync(path, yaml.safeDump(serverDefaultConfig))
+      fs.writeFileSync(configPath, yaml.safeDump(serverDefaultConfig))
       console.log(`ok`);
     }
   }
   try {
-    const content = fs.readFileSync(path, "utf8");
+    const content = fs.readFileSync(configPath, "utf8");
     const config: ParsedSLConfig = yaml.safeLoad(content);
     if (!config.steamKey || config.steamKey.length === 0) {
       console.error(`the config needs a valid steamKey`);
       console.log(`check the README of screeps-launcher on how to get yours @ https://github.com/screepers/screeps-launcher`);
-      console.log(`your config file is located here: ${path}`);
+      console.log(`your config file is located here: ${configPath}`);
       return false;
     }
     return true;
@@ -220,4 +249,32 @@ const getCurrentReleaseUrl = async (): Promise<string | null> => {
       reject(err);
     });
   });
+}
+
+
+export const validateBotConfig = async (configPath: string) => {
+  let shouldUpdateBots = false;
+  const bots = getBotConfig(configPath);
+  if (Object.keys(bots).length === 0) {
+    shouldUpdateBots = true;
+  }
+  console.log(`the following bots are configured:`);
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  console.log(JSON.stringify(bots, null, 2));
+
+  const botConfigOK = await yesno({ question: "is this okay?" });
+
+  if (shouldUpdateBots || !botConfigOK) {
+    prompt.start();
+    prompt.get("botPath", (err: any, result: any) => {
+      if (err) {
+        console.log(`error: ${err}`);
+        return;
+      }
+      // updateBotConfig(configPath, { [DEFAULT_BOT_NAME]: `".\\\\..\\\\..\\\\..\\\\screeps-novatipu\\\\dist"` });
+      updateBotConfig(configPath, { [DEFAULT_BOT_NAME]: result.botPath });
+      console.log(`okay, path has been updated to ${result.botPath}`);
+    });
+
+  }
 }

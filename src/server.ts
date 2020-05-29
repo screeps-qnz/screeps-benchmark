@@ -6,6 +6,7 @@ import { sleep, SLEEP_DEFAULT } from "./util";
 import http from "http";
 import { parseRoomEventData, parseCpuEventData } from "parser";
 import { checkStructures, setTickOffset } from "stats";
+import { DEFAULT_BOT_NAME } from "./constants";
 const ScreepsAPI = require("screeps-api").ScreepsAPI;
 
 const TIMEOUT_SERVER_START = 600000;
@@ -13,63 +14,29 @@ const TIMEOUT_SERVER_WARN_INSTALL = 30000;
 const PORT_SERVER_CLI = 21026;
 const PORT_SERVER_HTTP = 21025;
 const ADDRESS_SERVER = "127.0.0.1";
+const INTERVAL_CHECK_SERVER = 500;
+const INTERVAL_ADD_USER = 1000;
 
-const children: ChildProcess[] = [];
-
-export const startServer = (filePath: string, params: any = []) => {
-  const split = filePath.split(path.sep);
-  split.pop();
-  const directory = split.join(path.sep);
-
-  return new Promise((resolve, reject) => {
-    let isRunning = false;
-    const cbRunning = (data: any) => {
-      if (data.toString().includes("Exited with error")) {
-        console.log(`[server] error: ${data}`);
-        reject(false);
-      }
-      if (data.toString().includes("Started")) {
-        isRunning = true;
-        children.push(server);
-        resolve(true);
-      }
-    }
-    const server = cp.spawn(filePath, params, { cwd: directory });
-    server.stdout!.setEncoding("utf8");
-    server.stdout!.on("data", cbRunning);
-    server.stderr!.on("data", cbRunning);
-    server.on("close", (code, signal) => {
-      console.log(`[server] closed: ${code} ${signal}`);
-    });
-    server.on("exit", (code, signal) => {
-      console.log(`[server] exit: ${code} ${signal}`);
-    })
-    setTimeout(() => {
-      if (isRunning) {
-        return;
-      }
-      console.log(`this is taking a while... server might be installing/updating`)
-    }, TIMEOUT_SERVER_WARN_INSTALL);
-    setTimeout(() => {
-      if (isRunning) {
-        return;
-      }
-      console.error(`server startup timed out.`);
-      console.log(`pid: ${server.pid}`);
-      treekill(server.pid, "SIGINT");
-      reject(false);
-    }, TIMEOUT_SERVER_START);
-  });
-}
-
-export const killChildProcesses = () => {
-  children.forEach((child) => {
-    treekill(child.pid, "SIGINT");
-  });
-}
+export const checkServer = async () => new Promise(async (resolve, reject) => {
+  setTimeout(() => {
+    reject("timeout waiting for the server");
+  }, TIMEOUT_SERVER_START);
+  let success = false;
+  while (!success) {
+    await runCli(`console.log("test")`, false)
+      .then(() => {
+        resolve();
+        success = true;
+      })
+      .catch(() => {
+        console.log("server not ready yet...");
+      });
+    sleep(INTERVAL_CHECK_SERVER);
+  }
+});
 
 
-export const runCli = (command: string) => new Promise((resolve, reject) => {
+export const runCli = (command: string, verboseError: boolean = true): Promise<string> => new Promise((resolve, reject) => {
   const options: http.RequestOptions = {
     protocol: "http:",
     hostname: ADDRESS_SERVER,
@@ -94,7 +61,10 @@ export const runCli = (command: string) => new Promise((resolve, reject) => {
   })
 
   req.on("error", error => {
-    console.error(error)
+    if (verboseError) {
+      console.error(error)
+    }
+    reject(error);
   })
 
   req.write(command);
@@ -131,19 +101,31 @@ export const getCurrentGameTime = (): Promise<number> => new Promise((resolve, r
 });
 
 
-export const prepareTestRun = async (rooms: string[], tickDuration: number) => new Promise(async (resolve, reject) => {
+export const prepareTestRun = async (rooms: string[], tickDuration: number): Promise<string> => new Promise(async (resolve, reject) => {
   console.log(`preparing test run...`);
   await sleep(SLEEP_DEFAULT);
-  await runCli(`system.resetAllData();`);
+  await runCli(`system.resetAllData();`).then((msg) => {
+    if (msg.startsWith("Error")) {
+      reject("error running initial resetAllData()");
+    }
+  }).catch((error) => {
+    reject(error);
+  })
   await sleep(SLEEP_DEFAULT);
   await runCli(`system.pauseSimulation();`);
   await sleep(SLEEP_DEFAULT);
   await runCli(`system.setTickDuration(${tickDuration});`);
   for (const room of rooms) {
-    console.log("spawning in " + room);
-    await runCli(`bots.spawn("test", "${room}", {username: "${room}", cpu: 100, gcl: 1});`);
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-    await sleep(1000);
+    console.log(`spawning in ${room}`);
+    await runCli(`bots.spawn("${DEFAULT_BOT_NAME}", "${room}", {username: "${room}", cpu: 100, gcl: 1});`).then((msg) => {
+      if (msg.startsWith("Error")) {
+        console.log(msg);
+        reject("error spawning");
+      }
+    }).catch((error) => {
+      reject(error);
+    })
+    await sleep(INTERVAL_ADD_USER);
   }
   const command = `storage.db["users"].find({ username: { $in: ${JSON.stringify(rooms)} } })`
     + `.then( users => users.map(u => u._id))`
@@ -156,8 +138,7 @@ export const prepareTestRun = async (rooms: string[], tickDuration: number) => n
   console.log(`server is ready to run!`);
   const time = await getCurrentGameTime();
   setTickOffset(time);
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-  await sleep(1000);
+  await sleep(INTERVAL_CHECK_SERVER);
   resolve();
 });
 
