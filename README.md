@@ -10,6 +10,11 @@ for now the focus is on the performance within the first safe mode. the tool wil
 (structures built, RCL upgrades). this should then give you some info that allows you to compare your bots performance
 to other bots. this way you have a chance to see whether you can get out of the first safe mode with a competitive room/eco.
 
+## requirements
+- node >= 10.x.x
+- npm >= 6.x.x
+- windows os (for now, sorry *nix users :| )
+
 ## how to
 1. `npm i`
 2. `npm run exec`
