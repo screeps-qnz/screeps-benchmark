@@ -86,12 +86,12 @@ export const checkStructures = (room: string, data: any) => {
       }
     }
   }
-  if ((safeMode[room] - data.gameTick || Infinity) <= 0) {
+  if ((safeMode[room] - data.gameTime || Infinity) <= 0) {
     console.log(`[${data.gameTime - tickOffset}][${room}]: safemode ended.`);
   } else {
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
     if (data.gameTick % 500 === 0) {
-      console.log(`[${data.gameTime - tickOffset}][${room}]: ticks til safe mode end: ${safeMode[room] - data.gameTick} `)
+      console.log(`[${data.gameTime - tickOffset}][${room}]: ticks til safe mode end: ${safeMode[room] - data.gameTime} `)
     }
   }
 }
