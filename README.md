@@ -21,3 +21,6 @@ to other bots. this way you have a chance to see whether you can get out of the 
 3. first run should error out checking for a steam key in your config.yml and instruct you on how to set that up
 4. `npm run exec`
 5. follow the instructions and you should be good to go!
+
+## special thanks
+special thanks to thmsn who helped testing and contributed a whole bunch of ideas for improvements! :)
