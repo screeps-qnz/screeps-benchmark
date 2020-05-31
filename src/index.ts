@@ -3,6 +3,7 @@ import { prepareTestRun, setupListener, runTests, checkServer, } from "server";
 import { sleep, SLEEP_DEFAULT } from "./util";
 import { DEFAULT_BOT_NAME } from "./constants";
 import yesno from "yesno";
+import { getCurrentTickWithOffset } from "stats";
 
 
 const main = async () => {
@@ -48,12 +49,13 @@ const main = async () => {
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
   await prepareTestRun(rooms, 100);
   await setupListener(rooms);
-  runTests(rooms);
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  await runTests(() => getCurrentTickWithOffset() > 20000);
 
 }
 
 process.on("exit", () => {
-  console.log(`\nremember to stop the server too if needed!`);
+  console.log(`\nbenchmark ended, remember to stop the server too if needed!`);
 });
 
 main();

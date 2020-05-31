@@ -45,6 +45,8 @@ export const addCpuData = (key: string, data: CpuEventData) => {
   cpuData[key][currentTick] = data;
 }
 
+export const getCurrentTickWithOffset = () => currentTick - tickOffset;
+
 export const checkStructures = (room: string, data: any) => {
   if (!structuresSeen[room]) {
     structuresSeen[room] = {};

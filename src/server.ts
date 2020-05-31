@@ -181,12 +181,18 @@ export const setupListener = async (rooms: string[]) => new Promise(async (resol
   resolve();
 })
 
-export const runTests = async (rooms: string[]) => {
+export const runTests = async (endCallBack: () => boolean) => new Promise(async (resolve, reject) => {
   // run
   await sleep(SLEEP_DEFAULT);
   console.log(`> system.resumeSimulation()`);
   await runCli(`system.resumeSimulation(); `);
-}
+  let shouldStop = false;
+  while (!shouldStop) {
+    await sleep(SLEEP_DEFAULT);
+    shouldStop = endCallBack();
+  }
+  resolve();
+});
 
 
 
